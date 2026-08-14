@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AURA — Personal AI</title>
+<meta name="theme-color" content="#6750A4">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#f7f5fb;color:#201b24}
+header{padding:18px 16px;background:#6750A4;color:white;position:sticky;top:0}
+h1{margin:0;font-size:24px}small{opacity:.85}
+main{max-width:720px;margin:auto;padding:14px}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+button{border:0;border-radius:14px;padding:12px;font-size:15px;background:white;color:#201b24}
+button.active{background:#6750A4;color:white}
+#chat{min-height:52vh;display:flex;flex-direction:column;gap:8px}
+.msg{padding:12px 14px;border-radius:16px;max-width:88%;white-space:pre-wrap}
+.ai{background:white;align-self:flex-start}.you{background:#e4d9ff;align-self:flex-end}
+.composer{display:flex;gap:8px;position:sticky;bottom:0;background:#f7f5fb;padding:8px 0}
+input{flex:1;border:1px solid #bbb;border-radius:14px;padding:13px;font-size:16px}
+.send{background:#6750A4;color:white}.memory{margin-top:10px}
+textarea{width:100%;min-height:100px;border-radius:14px;border:1px solid #bbb;padding:12px;font:inherit}
+</style>
+</head>
+<body>
+<header><h1>✨ AURA</h1><small id="modeLabel">General • Your personal AI</small></header>
+<main>
+<section class="modes" id="modes"></section>
+<section id="chat"></section>
+<section class="memory">
+<button onclick="editMemory()">🧠 Memory</button>
+</section>
+<div class="composer">
+<input id="input" placeholder="Talk to AURA…" autocomplete="off">
+<button class="send" onclick="send()">Send</button>
+</div>
+</main>
+<script>
+const modes=["🎤 Singing","🎵 Music","💃 Performance","📚 Study","💇 Style","💡 Ideas","🎯 Focus","💬 General"];
+let mode=localStorage.auraMode||"💬 General";
+let memory=localStorage.auraMemory||"";
+const chat=document.getElementById("chat"), modesEl=document.getElementById("modes");
+function renderModes(){modesEl.innerHTML="";modes.forEach(m=>{let b=document.createElement("button");b.textContent=m;b.className=m===mode?"active":"";b.onclick=()=>{mode=m;localStorage.auraMode=m;renderModes();label()};modesEl.appendChild(b)})}
+function label(){document.getElementById("modeLabel").textContent=mode+" • Your personal AI"}
+function add(text,you=false){let d=document.createElement("div");d.className="msg "+(you?"you":"ai");d.textContent=text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight}
+async function send(){
+ let i=document.getElementById("input"), text=i.value.trim(); if(!text)return;
+ i.value=""; add(text,true); add("Thinking…");
+ let thinking=chat.lastChild;
+ try{
+   let r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text,mode,memory})});
+   let data=await r.json(); thinking.remove(); add(data.reply||data.error||"No response.");
+ }catch(e){thinking.remove();add("AURA needs its secure backend connected before it can answer.")}
+}
+function editMemory(){
+ let v=prompt("What should AURA remember?",memory);
+ if(v!==null){memory=v;localStorage.auraMemory=v;alert("Memory saved on this device.")}
+}
+document.getElementById("input").addEventListener("keydown",e=>{if(e.key==="Enter")send()});
+renderModes();label();add("Hey! I'm AURA 😎\nPick a mode or just tell me what you need.");
+</script>
+</body></html>
